@@ -180,3 +180,7 @@ button { font: inherit; color: inherit; }
   .side .hint { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { .hint { transition: none; } }
+
+/* Ambient mode (index.html?ambient): only the scene, for embedding as a decoration. */
+.ambient .ui, .ambient .lab, .ambient #nogl { display: none !important; }
+.ambient #stage { cursor: default; }

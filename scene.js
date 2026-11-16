@@ -45,6 +45,20 @@ const D = 6;               // highest level drawn (total number of excitations)
 const R0 = 2.0;            // distance of a throw
 const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+/* Ambient mode (index.html?ambient): the scene alone, as a decoration embedded in another page.
+   No text or controls, fewer runs, a calmer pace. The embedding page can send messages:
+     { type: 'qsv-theme', theme: 'dark' | 'light' }   dark shows look A, light shows look B
+     { type: 'qsv-visible', visible: true | false }   pauses the scene while it is scrolled out of view
+   ?look=a|b|c picks the starting look. */
+const QS = new URLSearchParams(location.search);
+const AMBIENT = QS.has('ambient');
+let ambientVisible = true;
+if (AMBIENT) {
+  P.M = 24000; P.rate = 0.7;
+  if (/^[abc]$/.test(QS.get('look') || '')) P.look = QS.get('look');
+  root.classList.add('ambient');
+}
+
 /* -------------------------------------------------------------------- math */
 const cross = (a, b) => [a[1]*b[2]-a[2]*b[1], a[2]*b[0]-a[0]*b[2], a[0]*b[1]-a[1]*b[0]];
 const dot3 = (a, b) => a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
@@ -894,6 +908,13 @@ function fitTitle() {                                     // keep the title on o
 }
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitTitle);
 function layout() {
+  if (AMBIENT) {                                          // the scene fills the frame: cloud on the left, ladder on the right
+    wide = true; root.dataset.layout = 'wide';
+    const s = Math.min(1.15, (cssW/cssH)/1.9), c = P.look === 'c';
+    G.cloud.off = [-0.43, 0.0]; G.cloud.scale = s*(c ? 0.92 : 1.0);
+    G.levels.off = [0.47, 0.04]; G.levels.scale = s*(c ? 1.35 : 1.45);
+    return;
+  }
   fitTitle();
   const aspect = cssW/cssH; wide = aspect >= 1.2;
   root.dataset.layout = wide ? 'wide' : 'tall';
@@ -1186,6 +1207,7 @@ function placeLabels() {
 let last = 0, idle = 0, dragging = false, slow = 0, frames = 0, simMs = 0;
 function frame(tms) {
   const now = tms*0.001; const dtReal = Math.min(Math.max(now - last, 0), 0.05); last = now;
+  if (AMBIENT && !ambientVisible) { requestAnimationFrame(frame); return; }   // scrolled out of view: do nothing
   resize();
   const t0 = performance.now();
   if (!P.paused) advance(dtReal);
@@ -1207,6 +1229,11 @@ function showRunCount() {                                // the caption under th
   const el = document.getElementById('run-count');
   if (el) el.textContent = fmt.format(P.look === 'c' ? Math.min(P.M, BEADS) : P.M);
 }
+if (AMBIENT) window.addEventListener('message', (e) => {
+  const d = e.data || {};
+  if (d.type === 'qsv-theme') setLook(d.theme === 'dark' ? 'a' : 'b');
+  if (d.type === 'qsv-visible') ambientVisible = !!d.visible;
+});
 function setLook(k) {
   P.look = k; root.dataset.look = k;
   document.querySelectorAll('.looks button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.look === k)));
