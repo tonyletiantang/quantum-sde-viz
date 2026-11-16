@@ -61,13 +61,7 @@ mention them too.
 
 ## Publishing
 
-Not published yet. The plan:
-
-1. Make this folder a git repository and put it on GitHub as `tonyletiantang/quantum-sde-viz`.
-2. Turn on GitHub Pages for that repository, serving the files as they are.
-3. The page then lives at `https://tonyletiantang.github.io/quantum-sde-viz/`,
-   under the same address as the personal site.
-4. Add a link to it in the personal site (`tonyletiantang.github.io`).
+The page is live at <https://tonyletiantang.github.io/quantum-sde-viz/>.
 
 ## Checks
 
