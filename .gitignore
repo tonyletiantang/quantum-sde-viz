@@ -1,0 +1,8 @@
+# output of the optional checks
+tools/out/
+tools/amplitudes.json
+
+# installed by npm for the checks
+node_modules/
+package.json
+package-lock.json

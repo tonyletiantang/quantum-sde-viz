@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en" data-look="a" data-layout="wide">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- ======================================================================
+     EVERY WORD ON THE PAGE IS IN THIS FILE.
+     Edit the text between the tags, save, and reload the page in the browser.
+
+     Things to leave alone unless you mean to change how the page works:
+       id="..."  class="..."  data-...="..."   (the code finds things by these)
+
+     Text with one version per look is written three times, marked
+       data-for="a"  (Luminous)   data-for="b"  (Ink)   data-for="c"  (Glass).
+
+     Math in the notes panel is LaTeX: $...$ inline, $$...$$ on its own line.
+       Inside math write \lt and \gt for < and >.
+     Outside math, <sub>1</sub> is a subscript and <sup>2</sup> a superscript.
+     ====================================================================== -->
+
+<!-- The name shown on the browser tab, and the one-line summary that search engines and link previews use. -->
+<title>Quantum Advantage from Noise</title>
+<meta name="description" content="A noisy three-variable system drawn twice: as a cloud of runs, and as light on the levels of three quantum oscillators. After Bravyi, Byrne, Zayats and Zhuk, arXiv:2606.08349.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600&family=Instrument+Serif:ital@0;1&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.10/katex.min.css">
+<link rel="stylesheet" href="style.css">
+<!-- Typesets the LaTeX in the page, then keeps a period or comma on the same line as the formula before it. -->
+<script>
+function typesetMath() {
+  renderMathInElement(document.body, { delimiters: [ { left: '$$', right: '$$', display: true }, { left: '$', right: '$', display: false } ], throwOnError: false });
+  document.querySelectorAll('.katex').forEach(function (k) {
+    if (k.parentNode.classList.contains('katex-display')) return;
+    var t = k.nextSibling, m = t && t.nodeType === 3 && t.data.match(/^[.,;:!?)]+/);
+    if (!m) return;
+    var glue = document.createElement('span'); glue.style.whiteSpace = 'nowrap';
+    k.parentNode.insertBefore(glue, k); glue.appendChild(k); glue.appendChild(document.createTextNode(m[0]));
+    t.data = t.data.slice(m[0].length);
+  });
+}
+</script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.10/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.10/contrib/auto-render.min.js" onload="typesetMath()"></script>
+</head>
+<body>
+
+<!-- The scene is drawn on this canvas. The label is read aloud by screen readers. -->
+<canvas id="stage" aria-label="A rotating three-dimensional cloud of noisy trajectories beside a lattice of oscillator levels that lights up with the cloud's Hermite moments."></canvas>
+
+<div class="ui">
+
+  <!-- ====================== Title block, top left ====================== -->
+  <header class="head">
+    <p class="kicker">An interactive visualization of Bravyi et al. (<a href="https://arxiv.org/abs/2606.08349">arXiv:2606.08349</a>) by Tony Letian Tang</p>
+    <h1>Quantum Advantage from Noise</h1>
+    <!-- One line under the title. -->
+    <p class="lede">Simulation of a family of nonlinear stochastic differential equations and its quantum encoding</p>
+  </header>
+
+  <!-- ====================== Buttons, top right ====================== -->
+  <div class="side">
+    <!-- The names of the three looks. Keep the letter inside <span class="k">. -->
+    <div class="looks" role="group" aria-label="Choose a look">
+      <button type="button" data-look="a" aria-pressed="true"><span class="k">A</span>Luminous</button>
+      <button type="button" data-look="b" aria-pressed="false"><span class="k">B</span>Ink</button>
+      <button type="button" data-look="c" aria-pressed="false"><span class="k">C</span>Glass</button>
+    </div>
+    <button type="button" class="ghost" id="notes-btn" aria-expanded="false" aria-controls="notes">What am I looking at?</button>
+    <span class="hint">Drag to rotate</span>
+  </div>
+
+  <!-- ====================== Caption under the cloud ======================
+       The number inside id="run-count" is filled in by the code. The sentence after the bold line has one version per look. -->
+  <p class="cap" id="cap-cloud" style="left:38.5%">
+    <b><span id="run-count">90,000</span> runs of one noisy system.</b>
+    Dots: runs. Bright trajectory: the expectation $\mathbb{E}[X(t)]$.
+  </p>
+
+  <!-- ====================== Caption under the levels ====================== -->
+  <p class="cap" id="cap-levels" style="left:80%">
+    <b>The same state, on oscillator levels.</b>
+    Sites: $|n\rangle = |n_1, n_2, n_3\rangle$. Brightness: amplitude in log scale.
+  </p>
+
+  <!-- ====================== Controls, bottom ======================
+       The words next to each slider and on each button. The numbers shown beside the sliders are filled in by the code.
+       The pause button's two wordings are in data-label-pause and data-label-play. -->
+  <form class="controls" id="controls">
+    <div class="field"><label for="g">Force strength <i>g</i></label><div class="row"><input id="g" type="range" min="0" max="3" step="0.05" value="1.4"><output id="g-out" for="g">1.40</output></div></div>
+    <div class="field"><label for="lam">Damping rate <i>λ</i></label><div class="row"><input id="lam" type="range" min="0.06" max="0.8" step="0.01" value="0.22"><output id="lam-out" for="lam">0.22</output></div></div>
+    <div class="field"><label for="q">Noise strength <i>q</i></label><div class="row"><input id="q" type="range" min="0.05" max="1.5" step="0.01" value="0.44"><output id="q-out" for="q">0.44</output></div></div>
+    <div class="field"><label for="speed">Simulation speed</label><div class="row"><input id="speed" type="range" min="0.1" max="1.5" step="0.1" value="1"><output id="speed-out" for="speed">1.0×</output></div></div>
+    <button type="button" id="throw">Restart</button>
+    <button type="button" id="pause" aria-pressed="false" data-label-pause="Pause" data-label-play="Play">Pause</button>
+    <label class="check" for="auto"><input id="auto" type="checkbox" checked>Restart when it settles</label>
+  </form>
+
+  <!-- ====================== Notes panel ======================
+       Opens with the "What am I looking at?" button. One <p> ... </p> per paragraph; the bold opening words are in <b>. -->
+  <aside class="notes" id="notes" hidden aria-label="Notes on the scene">
+    <button type="button" class="ghost" id="notes-close" aria-label="Close the notes">Close</button>
+    <h2>What the scene shows</h2>
+
+    <p><b>Main result.</b>
+      Bravyi, Byrne, Zayats and Zhuk (<a href="https://arxiv.org/abs/2606.08349">arXiv:2606.08349</a>) study $N$ noisy variables
+      $$dX_i = \big(-\lambda_i X_i + f_i(X)\big)\,dt + \sqrt{q}\,dW_i ,$$
+      with damping rates $\lambda_i > 0$, noise strength $q$, independent Brownian motions $W_i$ and a quadratic force $f_i(X) = \sum_{j,k} c_{ijk} X_j X_k$.
+      They assume $\nabla\cdot(\mu f) = 0$. This way, the equation decays into a stationary Gaussian distribution $\mu \sim \mathcal{N}\big(0, \operatorname{diag}(p_1, \dots, p_N)\big)$ with $p_i = q/2\lambda_i$.  
+      Start from $\mu$ shifted to a point $x_0$ and pick a low-degree polynomial $O$.
+      For sparse, bounded $c$, their quantum algorithm estimates $\mathbb{E}[O(X(t))]$ to accuracy $\varepsilon$ at cost $\mathrm{poly}\big(\log N,\, t,\, 1/\varepsilon,\, e^{\sum_i x_{0,i}^2/p_i}\big)$.</p>
+
+    <p><b>Simulation scene.</b>
+      Set $N = 3$ and $\lambda_i = \lambda$, so every $p_i = p = q/2\lambda$. The force is
+      $$f(X) = g\,(X_2X_3,\; X_3X_1,\; -2X_1X_2).$$
+      It satisfies $X\cdot f = 0$ and $\nabla\cdot f = 0$, which together give $\nabla\cdot(\mu f) = 0$.
+      The sliders set $g$, $\lambda$ and $q$.</p>
+
+    <p><b>The cloud.</b>
+      Each dot $X(t) = (X_1(t), X_2(t), X_3(t))$ is one run of the equation, starting from a random point in the initial distribution and evolving with its own noise. 
+      <i>Restart</i> draws fresh dots from $\mu$ shifted to a new $x_0$ with $|x_0| = 2$.
+      The bright line is the path of the center, $\mathbb{E}[X(t)]$.
+      The thin loop on the surface of the sphere $|X| = 2$ is the path $x_0$ would follow under the force alone.
+      In looks A and B each dot has a short tail: the path the force alone would have carried it along in the last moment, with no damping or noise. Together the tails trace the flow of the force.
+      Color shows distance from the origin; in Ink, strokes are blue outside the sphere and black inside.</p>
+
+    <p><b>The levels.</b>
+      The paper rewrites the problem as quantum harmonic oscillators, one per variable.
+      Site $n = (n_1, n_2, n_3)$ is the state $|n\rangle = |n_1 n_2 n_3\rangle$ with $n_i$ excitations in oscillator $i$, with height $n_1 + n_2 + n_3 \le 6$.
+      Write the cloud at time $t$ as a state $|\Phi(t)\rangle = \sum_n \varphi_n(t)\,|n\rangle$ of these oscillators. Its amplitudes are
+      $$\varphi_n(t) = \mathbb{E}\Big[\prod_i \frac{\mathrm{He}_{n_i}\big(X_i(t)/\sqrt{p}\big)}{\sqrt{n_i!}}\Big],$$
+      with $\mathrm{He}_k$ the Hermite polynomial of degree $k$, estimated by averaging over the dots. The light on site $n$ is $\varphi_n^2$. The quantum algorithm simulates the evolution of $|\Phi(t)\rangle$.
+    </p>
+
+    <p><b>What to watch.</b>
+      The bottom site is $\mu$ itself, with $\varphi_{000} = 1$ always. The three sites above it hold $\mathbb{E}[X_i]/\sqrt{p}$, the cloud's center in units of its width.
+      Each restart begins in a coherent state, $\varphi_n = \prod_i (x_{0,i}/\sqrt{p})^{n_i}/\sqrt{n_i!}$. 
+      Damping and noise together shrink $\varphi_n$ at rate $\lambda(n_1 + n_2 + n_3)$; the force alone moves light only between neighboring heights and keeps the total fixed.
+      So the light drains to the bottom as the cloud relaxes.</p>
+  </aside>
+</div>
+
+<!-- ====================== Labels drawn on the scene ======================
+     The code moves these to follow the scene as it turns. First the three axis names, then the two tags on the levels. -->
+<span class="lab ax" id="lab-x1">x<sub>1</sub></span>
+<span class="lab ax" id="lab-x2">x<sub>2</sub></span>
+<span class="lab ax" id="lab-x3">x<sub>3</sub></span>
+<span class="lab" id="lab-lo"><b>0 excitations</b><small>ground state: the cloud at rest</small></span>
+<span class="lab" id="lab-hi"><b>6 excitations</b><small>and onwards...</small></span>
+
+<!-- Shown only when the browser cannot draw the scene. -->
+<p id="nogl" hidden>This page needs WebGL 2, which this browser or device does not provide. Any current desktop browser will show it.</p>
+
+<script src="scene.js"></script>
+</body>
+</html>
